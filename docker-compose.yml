@@ -1,0 +1,45 @@
+name: traefik
+services:
+    traefik:
+        image: traefik:latest
+        container_name: traefik
+        restart: unless-stopped
+        networks: 
+           proxy:
+        ports:
+            - 80:80
+            - 443:443
+            - 8080:8080
+        restart: unless-stopped
+        environment:
+           - CF_API_EMAIL=example@example.com
+           - CF_DNS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxx
+         # - CF_API_KEY=YOU_API_KEY
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - /DATA/AppData/$AppID/config/traefik.yml:/etc/traefik/traefik.yml:ro
+            - /DATA/AppData/$AppID/config/traefik/acme.json:/etc/traefik/acme.json
+            - /DATA/AppData/$AppID/config/config.yml:/etc/traefik/config.yml:ro
+            - /home/ubuntu/docker/traefik/logs:/var/log/traefik
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.traefik.entrypoints=http"
+            - "traefik.http.routers.traefik.rule=Host(`traefik-dashboard.yog.duckdns.org`)" 
+            - "traefik.http.middlewares.traefik-auth.basicauth.users=YOUR_USERNAME_PASSWORD"
+            - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+            - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+            - "traefik.http.routers.traefik-secure.entrypoints=https"
+            - "traefik.http.routers.traefik-secure.rule=Host(`traefik-dashboard.yog.duckdns.org`)"
+            - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+            - "traefik.http.routers.traefik-secure.tls=true"
+            - "traefik.http.routers.traefik-secure.tls.certresolver=duckdns"
+            - "traefik.http.routers.traefik-secure.tls.domains[0].main=yog.duckdns.org"
+            - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.yog.duckdns.org"
+            - "traefik.http.routers.traefik-secure.service=api@internal"
+            - "icon:https://icon.casaos.io/main/all/traefik.png"
+networks:
+    proxy:
+        name: proxy
+        external: true
